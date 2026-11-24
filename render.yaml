@@ -37,6 +37,7 @@ services:
     plan: starter
     region: oregon
     maxmemoryPolicy: noeviction
+    ipAllowList: []
 
   - type: worker
     name: hostel-booking-worker
