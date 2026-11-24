@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Your dashboard | Roomly{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading">
+    <div>
+        <p class="eyebrow">Your home base</p>
+        <h1>Good to see you, {{ profile.user.first_name|default:profile.user.username }}.</h1>
+        <p>Your room, exchange requests, and next steps at a glance.</p>
+    </div>
+    <a href="{% url 'rooms:room_list' %}" class="button button-quiet">Explore rooms <span aria-hidden="true">&rarr;</span></a>
+</section>
+
+<div class="grid grid-2">
+    <section class="panel dashboard-card">
+        <div class="dashboard-card-head">
+            <div>
+                <p class="eyebrow">Your allocation</p>
+                <h3>Current room</h3>
+            </div>
+            <span class="stat-icon" aria-hidden="true">⌂</span>
+        </div>
+        {% if assigned_room %}
+            <div class="room-highlight">
+                <span class="room-highlight-icon" aria-hidden="true">▦</span>
+                <div>
+                    <strong>{{ assigned_room.block.name }} · Room {{ assigned_room.room_number }}</strong>
+                    <p>{{ assigned_room.block.get_gender_restriction_display }} block · assigned {{ profile.current_room_assigned_at|date:"M j, Y"|default:"date not recorded" }}</p>
+                </div>
+            </div>
+            <p class="dashboard-room-link"><a class="room-link" href="{% url 'rooms:room_detail' assigned_room.id %}">View room details &rarr;</a></p>
+        {% else %}
+            <p class="empty-inline">You do not have a room allocated yet. Browse the directory or ask your hostel administrator to assign one.</p>
+        {% endif %}
+    </section>
+
+    <section class="panel dashboard-card">
+        <div class="dashboard-card-head">
+            <div>
+                <p class="eyebrow">Keep things moving</p>
+                <h3>Exchange requests</h3>
+            </div>
+            <a href="{% url 'swaps:list' %}" class="room-link">View all</a>
+        </div>
+        {% if exchange_requests %}
+            <ul class="request-list">
+                {% for exchange_request in exchange_requests %}
+                    <li class="request-item">
+                        <p>
+                            <strong><a href="{% url 'swaps:request_detail' exchange_request.id %}">Request #{{ exchange_request.id }}</a></strong><br>
+                            <span class="muted">{{ exchange_request.get_status_display }} · {{ exchange_request.created_at|date:"M j, Y" }}</span>
+                        </p>
+                        <span class="badge badge-{{ exchange_request.status|lower }}">{{ exchange_request.get_status_display }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-inline">No exchange requests yet. You can compare verified rooms and create a request when you are ready.</p>
+        {% endif %}
+        {% if assigned_room %}
+            <p class="dashboard-swap-link"><a class="button button-small" href="{% url 'swaps:create' %}">Request an exchange</a></p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="panel panel-pad subsection">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Your next step</p>
+            <h2>Proposal inbox</h2>
+        </div>
+        <a class="room-link" href="{% url 'swaps:proposals' %}">View proposals &rarr;</a>
+    </div>
+    {% if proposals %}
+        <ul class="request-list">
+            {% for participation in proposals|slice:":4" %}
+                <li class="request-item">
+                    <p><strong>{{ participation.proposal.get_status_display }}</strong><br><span class="muted">{{ participation.proposal.cycle_length }} residents · expires {{ participation.proposal.expires_at|date:"M j, Y, g:i a" }}</span></p>
+                    <span class="badge badge-{{ participation.response|lower }}">{{ participation.get_response_display }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-inline">There are no proposals awaiting your response.</p>
+    {% endif %}
+</section>
+
+<section class="panel panel-pad subsection">
+    <div class="section-heading">
+        <div><p class="eyebrow">Completed changes</p><h2>Transfer records</h2></div>
+        <a class="room-link" href="{% url 'swaps:transfers' %}">View history &rarr;</a>
+    </div>
+    {% if transfers %}
+        <ul class="request-list">
+            {% for transfer in transfers %}
+                <li class="request-item">
+                    <p><strong>Transfer {{ transfer.transfer_id|truncatechars:18 }}</strong><br><span class="muted">{{ transfer.completed_at|date:"M j, Y, g:i a" }}</span></p>
+                    <a class="room-link" href="{% url 'swaps:transfer_detail' transfer.transfer_id %}">Details</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-inline">Completed exchanges and their transfer records will appear here.</p>
+    {% endif %}
+</section>
+{% endblock %}

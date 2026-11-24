@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Hostel operations | Roomly{% endblock %}
+{% block content %}
+<section class="page-intro"><p class="eyebrow">Hostel administrator</p><h1>Operations dashboard</h1><p>Configure verified inventory, eligibility rules, and staff access for official room exchanges.</p></section>
+<section class="stats-grid">
+    <div class="stat-card"><span class="stat-icon">⌂</span><div><span class="stat-value">{{ active_blocks }}</span><span class="stat-label">Hostel blocks</span></div></div>
+    <div class="stat-card"><span class="stat-icon">✓</span><div><span class="stat-value">{{ unverified_rooms }}</span><span class="stat-label">Rooms awaiting verification</span></div></div>
+    <div class="stat-card"><span class="stat-icon">↔</span><div><span class="stat-value">{{ active_requests }}</span><span class="stat-label">Active requests</span></div></div>
+    <div class="stat-card"><span class="stat-icon">◷</span><div><span class="stat-value">{{ approval_queue }}</span><span class="stat-label">Awaiting warden approval</span></div></div>
+</section>
+<section class="grid grid-2 subsection">
+    <article class="panel panel-pad"><p class="eyebrow">Inventory</p><h2>Set up and verify rooms</h2><p>Add hostel blocks, room capacity, and block eligibility. Verify every room before it appears in the student directory.</p><div class="button-row"><a class="button" href="{% url 'admin:rooms_hostelblock_changelist' %}">Manage blocks</a><a class="button button-quiet" href="{% url 'admin:rooms_room_changelist' %}">Verify rooms</a></div></article>
+    <article class="panel panel-pad"><p class="eyebrow">Eligibility and policy</p><h2>Keep rules current</h2><p>{% if policy %}Cooling-off: {{ policy.cooling_off_days }} days · Request validity: {{ policy.request_validity_days }} days · Maximum chain: {{ policy.max_chain_length }}.{% else %}Configure the default exchange policy before opening requests.{% endif %}</p><div class="button-row"><a class="button" href="{% url 'admin:swaps_policyrule_changelist' %}">Configure policy</a><a class="button button-quiet" href="{% url 'admin:accounts_studentprofile_changelist' %}">Student eligibility</a></div></article>
+    <article class="panel panel-pad"><p class="eyebrow">Staff access</p><h2>Assign wardens</h2><p>Wardens can approve only exchanges entirely within blocks assigned to them. Chief Wardens can review cross-block chains.</p><a class="button button-quiet" href="{% url 'admin:accounts_wardenassignment_changelist' %}">Manage assignments</a></article>
+    <article class="panel panel-pad"><p class="eyebrow">System activity</p><h2>Review workflow</h2><p>View requests, proposals, approvals, transfer records, and audit entries.</p><a class="button button-quiet" href="{% url 'admin:swaps_auditentry_changelist' %}">Open audit trail</a></article>
+</section>
+{% if wardens_without_assignments %}<div class="alert alert-warning subsection" role="status">No wardens have block assignments. Assign wardens before using the approval queue.</div>{% endif %}
+{% endblock %}

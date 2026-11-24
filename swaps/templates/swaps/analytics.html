@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Exchange reports | Roomly{% endblock %}
+{% block content %}
+<section class="page-intro"><p class="eyebrow">Hostel administration</p><h1>Exchange reports</h1><p>Operational volumes and completed exchange patterns.</p></section>
+<form method="get" class="filter-form panel panel-pad subsection">
+    <div class="field"><label for="period">Report period</label><select class="field-control" id="period" name="period"><option value="30" {% if period == '30' %}selected{% endif %}>Last 30 days</option><option value="90" {% if period == '90' %}selected{% endif %}>Last 90 days</option><option value="365" {% if period == '365' %}selected{% endif %}>Last 12 months</option><option value="all" {% if period == 'all' %}selected{% endif %}>All time</option></select></div>
+    <div class="filter-actions"><button type="submit" class="button">Update report</button></div>
+</form>
+<section class="stats-grid stats-grid-4">
+    <div class="stat-card"><span class="stat-icon">↗</span><div><span class="stat-value">{{ request_count }}</span><span class="stat-label">Requests</span></div></div>
+    <div class="stat-card"><span class="stat-icon">⇄</span><div><span class="stat-value">{{ proposal_count }}</span><span class="stat-label">Proposals created</span></div></div>
+    <div class="stat-card"><span class="stat-icon">%</span><div><span class="stat-value">{{ match_rate }}%</span><span class="stat-label">Requests matched</span></div></div>
+    <div class="stat-card"><span class="stat-icon">✓</span><div><span class="stat-value">{{ completed_count }}</span><span class="stat-label">Transfers completed</span></div></div>
+</section>
+<p class="muted">Currently open requests in this period: <strong>{{ open_count }}</strong>.</p>
+<section class="panel panel-pad subsection">
+    <div class="section-heading"><div><h2>Requests by hostel block</h2><p>Requests counted by their residents’ current room.</p></div></div>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Block</th><th>Requests</th><th>Completed transfers</th></tr></thead><tbody>
+        {% for block in blocks %}<tr><td>{{ block.name }}</td><td>{{ block.request_count }}</td><td>{{ block.transfer_count }}</td></tr>{% empty %}<tr><td class="table-empty" colspan="3">No blocks configured.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+<section class="panel panel-pad subsection">
+    <div class="section-heading"><div><h2>Approval patterns by warden</h2><p>Decisions recorded during the selected period.</p></div></div>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Approver</th><th>Approved</th><th>Rejected</th></tr></thead><tbody>
+        {% for warden in warden_patterns %}<tr><td>{{ warden.approver__username }}</td><td>{{ warden.approved_count }}</td><td>{{ warden.rejected_count }}</td></tr>{% empty %}<tr><td class="table-empty" colspan="3">No approval decisions in this period.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+<section class="panel panel-pad subsection">
+    <div class="section-heading"><div><h2>Most requested rooms</h2><p>Signals for future hostel room compatibility planning.</p></div></div>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Room</th><th>Block</th><th>Preference count</th></tr></thead><tbody>
+        {% for room in most_requested_rooms %}<tr><td>{{ room.room_number }}</td><td>{{ room.block.name }}</td><td>{{ room.request_count }}</td></tr>{% empty %}<tr><td class="table-empty" colspan="3">No room preferences have been submitted.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+<section class="panel panel-pad subsection"><h2>Average completion time</h2><p>{% if average_duration %}{{ average_duration }}{% else %}Not enough completed exchanges to calculate this yet.{% endif %}</p></section>
+{% endblock %}

@@ -1,0 +1,101 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: hostel_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hostel_db
+      POSTGRES_USER: hostel_user
+      POSTGRES_PASSWORD: hostel_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hostel_user -d hostel_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: hostel_web
+    restart: unless-stopped
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py setup_roles && python manage.py runserver 0.0.0.0:8000"]
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DB_NAME=hostel_db
+      - DB_USER=hostel_user
+      - DB_PASSWORD=hostel_password
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=hostel_db
+      - DB_USER=hostel_user
+      - DB_PASSWORD=hostel_password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+
+  beat:
+    build: .
+    restart: unless-stopped
+    command: celery -A config beat --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=hostel_db
+      - DB_USER=hostel_user
+      - DB_PASSWORD=hostel_password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

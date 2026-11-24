@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Exchange proposals | Roomly{% endblock %}
+{% block content %}
+<section class="page-intro">
+    <p class="eyebrow">A proposal needs everyone</p>
+    <h1>Your proposal inbox</h1>
+    <p>Review the complete room rotation. A proposal only reaches the warden after every affected resident accepts.</p>
+</section>
+{% for proposal in proposals %}
+    <article class="panel panel-pad subsection">
+        <div class="section-heading">
+            <div><p class="eyebrow">Proposal #{{ proposal.id }} · {{ proposal.cycle_length }} residents</p><h2>{{ proposal.get_status_display }}</h2></div>
+            {% if proposal.status == 'AWAITING_ACCEPTANCE' %}<span class="badge badge-pending" data-countdown="{{ proposal.expires_at|date:'c' }}">Expires {{ proposal.expires_at|date:"M j, g:i a" }}</span>{% else %}<span class="badge">{{ proposal.expires_at|date:"M j, g:i a" }}</span>{% endif %}
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Resident</th><th>From</th><th>To</th><th>Response</th></tr></thead>
+                <tbody>
+                    {% for participant in proposal.participants.all %}
+                        <tr>
+                            <td>{% if participant.student.user_id == user.id %}You{% else %}{{ participant.student.user.get_full_name|default:participant.student.user.username }}{% endif %}</td>
+                            <td>{{ participant.from_room.block.name }} · {{ participant.from_room.room_number }}</td>
+                            <td>{{ participant.to_room.block.name }} · {{ participant.to_room.room_number }}</td>
+                            <td>{{ participant.get_response_display }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% for participant in proposal.participants.all %}
+            {% if participant.student.user_id == user.id and participant.response == 'PENDING' and proposal.status == 'AWAITING_ACCEPTANCE' %}
+                <div class="button-row subsection">
+                    <form method="post" action="{% url 'swaps:respond' proposal.id %}">{% csrf_token %}<input type="hidden" name="decision" value="accept"><button class="button" type="submit">Accept this proposal</button></form>
+                    <form method="post" action="{% url 'swaps:respond' proposal.id %}">{% csrf_token %}<input type="hidden" name="decision" value="decline"><button class="button button-danger" type="submit">Decline</button></form>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </article>
+{% empty %}
+    <div class="panel empty-state"><h2>No proposals yet</h2><p>When an eligible exchange cycle is found, the full proposal will appear here with an expiry time.</p><a class="button button-quiet" href="{% url 'swaps:list' %}">View your requests</a></div>
+{% endfor %}
+{% endblock %}

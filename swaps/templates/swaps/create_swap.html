@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if exchange_request %}Edit{% else %}New{% endif %} exchange request | Roomly{% endblock %}
+
+{% block content %}
+<a href="{% url 'swaps:list' %}" class="back-link"><span aria-hidden="true">&larr;</span> My exchanges</a>
+<section class="panel form-layout">
+    <aside class="form-aside">
+        <p class="eyebrow">Official room change</p>
+        <h2>Share where you would like to move.</h2>
+        <p>Your request is matched with compatible residents. Every person in a proposal must accept before a warden can review it.</p>
+        <ul class="benefit-list">
+            <li>Eligibility and block rules are checked before submission</li>
+            <li>Direct and multi-resident rotations are considered</li>
+            <li>No room changes until the authorised approval is recorded</li>
+        </ul>
+        {% if policy %}
+            <p class="form-help">Requests remain active for {{ policy.request_validity_days }} days. Cooling-off period: {{ policy.cooling_off_days }} days.</p>
+        {% endif %}
+    </aside>
+    <div class="form-content">
+        <h1>{% if exchange_request %}Edit request #{{ exchange_request.id }}{% else %}Create an exchange request{% endif %}</h1>
+        <p>Your current room: <strong>{{ profile.current_room.block.name }} · Room {{ profile.current_room.room_number }}</strong>.</p>
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <form method="post" action="{% if exchange_request %}{% url 'swaps:edit' exchange_request.id %}{% else %}{% url 'swaps:create' %}{% endif %}" class="form-stack">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="{{ form.preferred_rooms.id_for_label }}">{{ form.preferred_rooms.label }}</label>
+                {{ form.preferred_rooms }}
+                {% if form.preferred_rooms.errors %}<div class="form-errors" role="alert">{{ form.preferred_rooms.errors }}</div>{% endif %}
+                <span class="form-help">{{ form.preferred_rooms.help_text }}</span>
+            </div>
+            <div class="form-field">
+                <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+                {{ form.reason }}
+                {% if form.reason.errors %}<div class="form-errors" role="alert">{{ form.reason.errors }}</div>{% endif %}
+            </div>
+            <div class="button-row">
+                <button type="submit" class="button">{% if exchange_request %}Save changes{% else %}Submit request{% endif %} <span aria-hidden="true">&rarr;</span></button>
+                <a href="{% url 'swaps:list' %}" class="button button-quiet">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

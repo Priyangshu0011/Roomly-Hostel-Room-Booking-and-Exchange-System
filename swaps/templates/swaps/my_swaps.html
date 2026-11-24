@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}My exchanges | Roomly{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <p class="eyebrow">Your room journey</p>
+    <h1>My exchange requests</h1>
+    <p>Track each request, review proposals, and see completed transfers.</p>
+</section>
+
+<section class="panel panel-pad">
+    <div class="section-heading">
+        <div>
+            <h2>Requests you submitted</h2>
+            <p>{% if profile.current_room %}Currently allocated to {{ profile.current_room.block.name }} · Room {{ profile.current_room.room_number }}.{% else %}A room allocation is required to request an exchange.{% endif %}</p>
+        </div>
+        {% if profile.current_room %}<a href="{% url 'swaps:create' %}" class="button">New request <span aria-hidden="true">+</span></a>{% endif %}
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Request</th><th>Preferences</th><th>Status</th><th>Expires</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for exchange_request in exchange_requests %}
+                    <tr>
+                        <td><a href="{% url 'swaps:request_detail' exchange_request.id %}">#{{ exchange_request.id }}</a></td>
+                        <td>{% for preference in exchange_request.preferences.all %}{{ preference.room.block.name }} · {{ preference.room.room_number }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+                        <td><span class="badge badge-{{ exchange_request.status|lower }}">{{ exchange_request.get_status_display }}</span></td>
+                        <td>{{ exchange_request.expires_at|date:"M j, Y, g:i a" }}</td>
+                        <td class="actions-cell">
+                            <a class="room-link" href="{% url 'swaps:request_detail' exchange_request.id %}">Details</a>
+                            {% if exchange_request.status == 'OPEN' %}
+                                <form method="post" action="{% url 'swaps:withdraw' exchange_request.id %}">
+                                    {% csrf_token %}<button type="submit" class="button button-danger button-small">Withdraw</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="table-empty" colspan="5">You have not submitted an exchange request.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel panel-pad subsection">
+    <div class="section-heading"><div><h2>Your proposal activity</h2><p>All affected residents must accept before approval can proceed.</p></div><a href="{% url 'swaps:proposals' %}" class="room-link">Open proposal inbox &rarr;</a></div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Proposal</th><th>Residents</th><th>Your response</th><th>Status</th><th>Expires</th></tr></thead>
+            <tbody>
+                {% for participation in participations %}
+                    <tr>
+                        <td>#{{ participation.proposal.id }}</td>
+                        <td>{{ participation.proposal.cycle_length }}</td>
+                        <td>{{ participation.get_response_display }}</td>
+                        <td>{{ participation.proposal.get_status_display }}</td>
+                        <td>{{ participation.proposal.expires_at|date:"M j, Y, g:i a" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="table-empty" colspan="5">No proposals have included your requests yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Transfer record | Roomly{% endblock %}
+{% block content %}
+<a href="{% url 'swaps:transfers' %}" class="back-link"><span aria-hidden="true">&larr;</span> Transfer history</a>
+<section class="page-intro"><p class="eyebrow">Completed {{ transfer.completed_at|date:"M j, Y, g:i a" }}</p><h1>Transfer record</h1><p><code>{{ transfer.transfer_id }}</code></p></section>
+<section class="panel panel-pad">
+    <div class="section-heading"><div><h2>Room changes</h2><p>Proposal #{{ transfer.proposal_id }} · {{ participants|length }} residents</p></div><span class="badge badge-approved">Completed</span></div>
+    <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Resident</th><th>Moved from</th><th>Moved to</th></tr></thead>
+        <tbody>{% for participant in participants %}<tr><td>{{ participant.student.user.get_full_name|default:participant.student.user.username }}</td><td>{{ participant.from_room.block.name }} · {{ participant.from_room.room_number }}</td><td>{{ participant.to_room.block.name }} · {{ participant.to_room.room_number }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <div class="detail-metric subsection"><span>Approval remarks</span><strong>{{ transfer.approval_remarks }}</strong></div>
+</section>
+{% endblock %}

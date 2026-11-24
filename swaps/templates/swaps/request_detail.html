@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Exchange request #{{ exchange_request.id }} | Roomly{% endblock %}
+{% block content %}
+<a href="{% url 'swaps:list' %}" class="back-link"><span aria-hidden="true">&larr;</span> My exchanges</a>
+<section class="page-intro">
+    <p class="eyebrow">Request #{{ exchange_request.id }}</p>
+    <h1>Exchange request</h1>
+    <p>Submitted {{ exchange_request.created_at|date:"M j, Y, g:i a" }} · expires {{ exchange_request.expires_at|date:"M j, Y, g:i a" }}</p>
+</section>
+<section class="panel panel-pad">
+    <div class="detail-grid">
+        <div class="detail-metric"><span>Current room</span><strong>{{ exchange_request.from_room.block.name }} · {{ exchange_request.from_room.room_number }}</strong></div>
+        <div class="detail-metric"><span>Status</span><strong>{{ exchange_request.get_status_display }}</strong></div>
+        <div class="detail-metric"><span>Request reason</span><strong>{{ exchange_request.reason|default:"Not provided" }}</strong></div>
+    </div>
+    <h2 class="subsection">Preferred rooms</h2>
+    <ol class="request-list">
+        {% for preference in exchange_request.preferences.all %}
+            <li class="request-item"><p><strong>{{ preference.room.block.name }} · Room {{ preference.room.room_number }}</strong><br><span class="muted">Preference {{ preference.priority }}</span></p><span class="room-gender">{{ preference.room.block.get_gender_restriction_display }}</span></li>
+        {% empty %}<li class="empty-inline">No preferences saved.</li>{% endfor %}
+    </ol>
+    {% if exchange_request.status == 'OPEN' %}
+        <div class="button-row subsection">
+            <a class="button" href="{% url 'swaps:edit' exchange_request.id %}">Edit request</a>
+            <form method="post" action="{% url 'swaps:withdraw' exchange_request.id %}">{% csrf_token %}<button class="button button-danger" type="submit">Withdraw request</button></form>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

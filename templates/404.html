@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}404 · Page not found | Roomly{% endblock %}
+
+{% block content %}
+<section class="panel panel-pad page-error">
+    <h1 class="error-code error-code-danger">404</h1>
+    <h2>We couldn’t find that page.</h2>
+    <p class="error-description">The room, route, or resource may have moved, or the link may be incorrect.</p>
+    <div class="button-row button-row-center">
+        <a href="{% url 'rooms:room_list' %}" class="button">Browse rooms</a>
+        <a href="{% url 'accounts:dashboard' %}" class="button button-quiet">My dashboard</a>
+    </div>
+</section>
+{% endblock %}

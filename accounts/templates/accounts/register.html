@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Create your account | Roomly{% endblock %}
+
+{% block content %}
+<section class="panel form-layout">
+    <aside class="form-aside">
+        <p class="eyebrow">Your campus, your way</p>
+        <h2>Find a room that feels like yours.</h2>
+        <p>Create an account to explore verified rooms and request an official exchange.</p>
+        <ul class="benefit-list">
+            <li>Browse hostel rooms and occupancy at a glance</li>
+            <li>Track requests and proposal responses</li>
+            <li>Join direct or multi-resident room rotations</li>
+        </ul>
+    </aside>
+    <div class="form-content">
+        <h1>Create your account</h1>
+        <p>Join Roomly with your student details.</p>
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <form method="post" class="form-stack">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<div class="form-help">{{ field.help_text|safe }}</div>{% endif %}
+                    {% if field.errors %}<div class="form-errors" role="alert">{{ field.errors }}</div>{% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="button">Create account <span aria-hidden="true">&rarr;</span></button>
+        </form>
+        <p class="form-footer">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+    </div>
+</section>
+{% endblock %}

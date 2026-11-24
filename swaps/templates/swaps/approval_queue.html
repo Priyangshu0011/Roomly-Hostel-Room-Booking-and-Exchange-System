@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Approval queue | Roomly{% endblock %}
+{% block content %}
+<section class="page-intro">
+    <p class="eyebrow">Warden review</p>
+    <h1>Approval queue</h1>
+    <p>Only proposals accepted by every resident are shown. Approval will atomically update every allocation and create a transfer record.</p>
+</section>
+{% for proposal in proposals %}
+    <article class="panel panel-pad subsection">
+        <div class="section-heading">
+            <div><p class="eyebrow">Proposal #{{ proposal.id }} · {{ proposal.cycle_length }} residents</p><h2>Review exchange</h2></div>
+            <span class="badge badge-pending" data-countdown="{{ proposal.expires_at|date:'c' }}">Expires {{ proposal.expires_at|date:"M j, g:i a" }}</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Resident</th><th>From</th><th>To</th><th>Accepted</th></tr></thead>
+                <tbody>{% for participant in proposal.participants.all %}
+                    <tr><td>{{ participant.student.user.get_full_name|default:participant.student.user.username }}</td><td>{{ participant.from_room.block.name }} · {{ participant.from_room.room_number }}</td><td>{{ participant.to_room.block.name }} · {{ participant.to_room.room_number }}</td><td>{{ participant.responded_at|date:"M j, g:i a" }}</td></tr>
+                {% endfor %}</tbody>
+            </table>
+        </div>
+        <form method="post" action="{% url 'swaps:approve' proposal.id %}" class="form-stack subsection">
+            {% csrf_token %}
+            <div class="form-field"><label for="remarks-{{ proposal.id }}">Decision remarks (required)</label><textarea class="field-control" id="remarks-{{ proposal.id }}" name="remarks" rows="2" maxlength="1000" required></textarea></div>
+            <div class="button-row">
+                <button class="button" type="submit" name="decision" value="APPROVED">Approve and complete transfer</button>
+                <button class="button button-danger" type="submit" name="decision" value="REJECTED">Reject proposal</button>
+            </div>
+        </form>
+    </article>
+{% empty %}
+    <div class="panel empty-state"><h2>Queue is clear</h2><p>Fully accepted proposals will appear here for authorised review.</p></div>
+{% endfor %}
+{% endblock %}

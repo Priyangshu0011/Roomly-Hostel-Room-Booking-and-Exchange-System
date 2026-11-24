@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Room {{ room.room_number }} · {{ room.block.name }} | Roomly{% endblock %}
+
+{% block content %}
+<a href="{% url 'rooms:room_list' %}" class="back-link"><span aria-hidden="true">&larr;</span> Back to the directory</a>
+
+<section class="panel panel-pad">
+    <div class="detail-hero detail-hero-room">
+        <div>
+            <p class="eyebrow">{{ room.block.name }} · Room details</p>
+            <h1>Room {{ room.room_number }}</h1>
+            <p class="lead detail-lead">Verified room information for your exchange preferences.</p>
+        </div>
+        <div>
+            {% if available_spots == room.capacity %}
+                <span class="availability availability-open">All spots open</span>
+            {% elif available_spots > 0 %}
+                <span class="availability availability-partial">{{ available_spots }} spot{{ available_spots|pluralize }} open</span>
+            {% else %}
+                <span class="availability availability-full">Fully occupied</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-metric"><span>Hostel block</span><strong>{{ room.block.name }}</strong></div>
+        <div class="detail-metric"><span>Block policy</span><strong>{{ room.block.get_gender_restriction_display }}</strong></div>
+        <div class="detail-metric"><span>Room capacity</span><strong>{{ occupant_count }} / {{ room.capacity }} residents</strong></div>
+    </div>
+</section>
+
+{% if user.is_authenticated %}
+    <section class="panel panel-pad room-request-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Looking for a change?</p>
+                <h2>Request an official exchange</h2>
+                <p>This room can be selected as a preference. It is not a direct room booking.</p>
+            </div>
+            {% if can_request_exchange %}
+                <a class="button" href="{% url 'swaps:create' %}">Start an exchange request <span aria-hidden="true">&rarr;</span></a>
+            {% endif %}
+        </div>
+        {% if not can_request_exchange %}
+            <p class="muted">A current room allocation is required before requesting an exchange.</p>
+        {% endif %}
+    </section>
+{% else %}
+    <aside class="coverage-note note-spaced">
+        <p><strong>Request a room change.</strong> <a href="{% url 'accounts:register' %}">Create an account</a> or <a href="{% url 'accounts:login' %}">sign in</a> to start an official exchange.</p>
+    </aside>
+{% endif %}
+
+{% endblock %}

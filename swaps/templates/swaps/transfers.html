@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Transfer history | Roomly{% endblock %}
+{% block content %}
+<section class="page-intro"><p class="eyebrow">Your official history</p><h1>Completed transfers</h1><p>Every completed exchange includes its participants, approval, and room changes.</p></section>
+<section class="panel panel-pad">
+    <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Transfer ID</th><th>Completed</th><th>Residents</th><th>Action</th></tr></thead>
+        <tbody>{% for transfer in transfers %}
+            <tr><td><code>{{ transfer.transfer_id }}</code></td><td>{{ transfer.completed_at|date:"M j, Y, g:i a" }}</td><td>{{ transfer.proposal.cycle_length }}</td><td><a class="room-link" href="{% url 'swaps:transfer_detail' transfer.transfer_id %}">View record</a></td></tr>
+        {% empty %}<tr><td class="table-empty" colspan="4">No completed transfers are associated with your account.</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7fc">
+    <meta name="description" content="Official hostel room exchanges with eligibility checks, shared consent, and auditable approvals.">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <title>{% block title %}Roomly | Hostel room exchange{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script src="{% static 'js/app.js' %}" defer></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <nav class="navbar page-shell" aria-label="Main navigation">
+            <a href="{% url 'rooms:room_list' %}" class="brand">
+                <span class="brand-mark" aria-hidden="true">R</span>
+                <span>roomly<span class="brand-period">.</span></span>
+            </a>
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+                <span class="sr-only">Toggle navigation</span>
+                <span></span><span></span><span></span>
+            </button>
+            <ul class="nav-links" id="primary-nav">
+                <li><a href="{% url 'rooms:room_list' %}">Find a room</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'accounts:dashboard' %}">My dashboard</a></li>
+                    <li><a href="{% url 'swaps:list' %}">My exchanges</a></li>
+                    <li><a href="{% url 'swaps:proposals' %}">Proposals</a></li>
+                    {% if perms.swaps.review_exchangeproposal %}
+                        <li><a href="{% url 'swaps:approval_queue' %}">Approvals</a></li>
+                    {% endif %}
+                    {% if perms.rooms.manage_room_inventory %}
+                        <li><a href="{% url 'rooms:operations' %}">Operations</a></li>
+                    {% endif %}
+                    {% if perms.swaps.view_exchangeanalytics %}
+                        <li><a href="{% url 'swaps:analytics' %}">Reports</a></li>
+                    {% endif %}
+                    <li class="nav-account">
+                        <span class="avatar" aria-hidden="true">{{ user.username|first|upper }}</span>
+                        <span>{{ user.first_name|default:user.username }}</span>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'accounts:logout' %}">
+                            {% csrf_token %}
+                            <button class="nav-logout" type="submit">Sign out</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li><a href="{% url 'accounts:login' %}">Sign in</a></li>
+                    <li><a href="{% url 'accounts:register' %}" class="button button-small">Create account</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <main class="page-shell site-main">
+        {% if messages %}
+            <div class="messages" aria-live="polite">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }}" role="status">
+                        <span>{{ message }}</span>
+                        <button class="alert-close" type="button" aria-label="Dismiss message">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="page-shell footer-inner">
+            <a href="{% url 'rooms:room_list' %}" class="brand brand-footer">
+                <span class="brand-mark" aria-hidden="true">R</span>
+                <span>roomly<span class="brand-period">.</span></span>
+            </a>
+            <p>Every exchange, handled officially and transparently.</p>
+            <span>Roomly · Hostel room exchange</span>
+        </div>
+    </footer>
+</body>
+</html>

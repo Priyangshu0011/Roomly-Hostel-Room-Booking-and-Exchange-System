@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign in | Roomly{% endblock %}
+
+{% block content %}
+<section class="panel form-layout">
+    <aside class="form-aside">
+        <p class="eyebrow">Welcome back</p>
+        <h2>Your next room move starts here.</h2>
+        <p>Sign in to see your room, keep up with requests, and check for a match.</p>
+        <ul class="benefit-list">
+            <li>Your dashboard, requests, and room details in one place</li>
+            <li>Secure sign-in with Django authentication</li>
+            <li>Clear exchange and approval status updates</li>
+        </ul>
+    </aside>
+    <div class="form-content">
+        <h1>Sign in</h1>
+        <p>Use your student account to continue.</p>
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <form method="post" class="form-stack">
+            {% csrf_token %}
+            {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+            {% for field in form %}
+                <div class="form-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% if field.name == 'password' %}
+                        <div class="password-row">
+                            {{ field }}
+                            <button class="password-toggle" type="button" data-password-toggle aria-controls="{{ field.id_for_label }}" aria-pressed="false">Show</button>
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                    {% if field.errors %}<div class="form-errors" role="alert">{{ field.errors }}</div>{% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="button">Sign in <span aria-hidden="true">&rarr;</span></button>
+        </form>
+        <p class="form-footer">New to Roomly? <a href="{% url 'accounts:register' %}">Create an account</a></p>
+    </div>
+</section>
+{% endblock %}

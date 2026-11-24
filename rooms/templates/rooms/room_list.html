@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Find a hostel room | Roomly{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <p class="eyebrow">Verified hostel inventory</p>
+        <h1>Find your next room.<br>Exchange with confidence.</h1>
+        <p>Explore approved rooms and start an official exchange request. A move happens only after every resident accepts and the authorised warden approves.</p>
+        <a href="#room-directory" class="button">Explore the directory <span aria-hidden="true">&darr;</span></a>
+    </div>
+    <div class="hero-art" aria-hidden="true"><div class="hero-art-inner">⌂</div></div>
+</section>
+
+<section class="stats-grid" aria-label="Room directory overview">
+    <div class="stat-card">
+        <span class="stat-icon" aria-hidden="true">▦</span>
+        <div><span class="stat-value">{{ total_rooms_count }}</span>        <span class="stat-label">Verified room{{ total_rooms_count|pluralize }}</span></div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon" aria-hidden="true">✓</span>
+        <div><span class="stat-value">{{ available_rooms_count }}</span><span class="stat-label">Rooms with space</span></div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon" aria-hidden="true">⌂</span>
+        <div><span class="stat-value">{{ total_blocks_count }}</span><span class="stat-label">Hostel block{{ total_blocks_count|pluralize }}</span></div>
+    </div>
+</section>
+
+<section class="panel filter-panel" aria-labelledby="filter-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Make it yours</p>
+            <h2 id="filter-title">Find the right room</h2>
+        </div>
+        {% if selected_block or selected_capacity or available_only %}
+            <a href="{% url 'rooms:room_list' %}" class="room-link">Clear filters &times;</a>
+        {% endif %}
+    </div>
+    <form method="get" action="{% url 'rooms:room_list' %}" class="filter-form">
+        <div class="field">
+            <label for="block">Hostel block</label>
+            <input class="field-control" type="search" id="block" name="block" value="{{ selected_block }}" placeholder="Try North, Block A..." autocomplete="off">
+        </div>
+        <div class="field">
+            <label for="capacity">Room capacity</label>
+            <select class="field-control" id="capacity" name="capacity">
+                <option value="">Any capacity</option>
+                {% for size in capacity_options %}
+                    <option value="{{ size }}" {% if selected_capacity_int == size %}selected{% endif %}>{{ size }} student{{ size|pluralize }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <label class="check-field" for="available">
+            <input type="checkbox" id="available" name="available" value="1" {% if available_only %}checked{% endif %}>
+            Space available
+        </label>
+        <div class="filter-actions">
+            <button type="submit" class="button">Apply filters</button>
+        </div>
+    </form>
+    <p class="filter-hint">Filter rooms by block, capacity, or available space. Availability updates from current room allocations.</p>
+</section>
+
+<section id="room-directory">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">The room directory</p>
+            <h2>Rooms to make your own</h2>
+            <p>{{ total_rooms_count }} result{{ total_rooms_count|pluralize }}{% if selected_block %} for “{{ selected_block }}”{% endif %}</p>
+        </div>
+        {% if user.is_authenticated %}
+            <a href="{% url 'swaps:list' %}" class="button button-quiet button-small">My exchanges <span aria-hidden="true">&rarr;</span></a>
+        {% endif %}
+    </div>
+    <div class="room-grid">
+        {% for room in rooms %}
+            <article class="panel room-card">
+                <div class="room-card-top">
+                    <div>
+                        <p class="eyebrow">{{ room.block.name }}</p>
+                        <h3 class="room-number">Room {{ room.room_number }}</h3>
+                        <p class="room-block">{% if room.is_verified %}Verified inventory{% else %}Awaiting verification{% endif %}</p>
+                    </div>
+                    <span class="room-gender">{{ room.block.get_gender_restriction_display }}</span>
+                </div>
+                <div class="room-meta">
+                    <span aria-label="Capacity">♙ {{ room.capacity }} student{{ room.capacity|pluralize }}</span>
+                    <span aria-label="Occupancy">◉ {{ room.occupancy }} of {{ room.capacity }} occupied</span>
+                </div>
+                <div class="room-card-bottom">
+                    {% if room.occupancy == 0 %}
+                        <span class="availability availability-open">All spots open</span>
+                    {% elif room.occupancy < room.capacity %}
+                        <span class="availability availability-partial">{{ room.available_spots }} spot{{ room.available_spots|pluralize }} open</span>
+                    {% else %}
+                        <span class="availability availability-full">Fully occupied</span>
+                    {% endif %}
+                    <a class="room-link" href="{% url 'rooms:room_detail' room.id %}">Room details <span aria-hidden="true">&rarr;</span></a>
+                </div>
+            </article>
+        {% empty %}
+            <div class="panel empty-state">
+                <span class="empty-icon" aria-hidden="true">⌕</span>
+                <h3>No rooms found</h3>
+                <p>{% if selected_block or selected_capacity or available_only %}Try clearing or adjusting your filters.{% else %}No verified rooms are available to browse right now. Contact your hostel administrator.{% endif %}</p>
+                {% if selected_block or selected_capacity or available_only %}
+                    <a class="button button-quiet" href="{% url 'rooms:room_list' %}">Clear all filters</a>
+                {% elif perms.rooms.manage_room_inventory %}
+                    <a class="button" href="{% url 'rooms:operations' %}">Manage room inventory</a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}
