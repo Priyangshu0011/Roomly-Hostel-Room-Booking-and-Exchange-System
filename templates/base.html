@@ -24,11 +24,13 @@
                 <span></span><span></span><span></span>
             </button>
             <ul class="nav-links" id="primary-nav">
-                <li><a href="{% url 'rooms:room_list' %}">Find a room</a></li>
                 {% if user.is_authenticated %}
                     <li><a href="{% url 'accounts:dashboard' %}">My dashboard</a></li>
-                    <li><a href="{% url 'swaps:list' %}">My exchanges</a></li>
-                    <li><a href="{% url 'swaps:proposals' %}">Proposals</a></li>
+                    {% if not perms.swaps.review_exchangeproposal and not perms.swaps.view_exchangeanalytics and not perms.rooms.manage_room_inventory %}
+                        <li><a href="{% url 'rooms:room_list' %}">Find a room</a></li>
+                        <li><a href="{% url 'swaps:list' %}">My exchanges</a></li>
+                        <li><a href="{% url 'swaps:proposals' %}">Proposals</a></li>
+                    {% endif %}
                     {% if perms.swaps.review_exchangeproposal %}
                         <li><a href="{% url 'swaps:approval_queue' %}">Approvals</a></li>
                     {% endif %}
@@ -49,6 +51,7 @@
                         </form>
                     </li>
                 {% else %}
+                    <li><a href="{% url 'rooms:room_list' %}">Find a room</a></li>
                     <li><a href="{% url 'accounts:login' %}">Sign in</a></li>
                     <li><a href="{% url 'accounts:register' %}" class="button button-small">Create account</a></li>
                 {% endif %}

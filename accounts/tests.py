@@ -1,6 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission, User
 from accounts.models import StudentProfile
 from accounts.forms import StudentRegistrationForm
 from swaps.permissions import STUDENT_GROUP
@@ -88,6 +88,123 @@ class AccountsAuthenticationAndAccessTests(TestCase):
         response = self.client.post(self.logout_url, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['user'].is_authenticated)
+
+    def test_staff_navigation_only_shows_role_relevant_links(self):
+        approval_permission = Permission.objects.get(
+            content_type__app_label='swaps',
+            codename='review_exchangeproposal',
+        )
+        analytics_permission = Permission.objects.get(
+            content_type__app_label='swaps',
+            codename='view_exchangeanalytics',
+        )
+        inventory_permission = Permission.objects.get(
+            content_type__app_label='rooms',
+            codename='manage_room_inventory',
+        )
+
+        for username, permission, visible_link in (
+            ('warden_nav', approval_permission, '>Approvals</a>'),
+            ('chief_warden_nav', approval_permission, '>Approvals</a>'),
+            ('administrator_nav', inventory_permission, '>Operations</a>'),
+            ('dean_nav', analytics_permission, '>Reports</a>'),
+        ):
+            with self.subTest(role=username):
+                staff_user = User.objects.create_user(username=username, password=self.password)
+                staff_user.user_permissions.add(permission)
+                self.client.force_login(staff_user)
+
+                response = self.client.get(reverse('rooms:room_list'))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, visible_link)
+                self.assertContains(response, '>My dashboard</a>')
+                for student_link in (
+                    '>Find a room</a>',
+                    '>My exchanges</a>',
+                    '>Proposals</a>',
+                ):
+                    self.assertNotContains(response, student_link)
+
+                self.client.logout()
+
+    def test_student_navigation_keeps_room_and_exchange_links(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('rooms:room_list'))
+
+        self.assertContains(response, '>Find a room</a>')
+        self.assertContains(response, '>My dashboard</a>')
+        self.assertContains(response, '>My exchanges</a>')
+        self.assertContains(response, '>Proposals</a>')
+
+
+class StaffDashboardTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.password = dummy_test_pass
+
+    def _create_staff_user(self, username, group_name, permission):
+        user = User.objects.create_user(username=username, password=self.password)
+        group, _ = Group.objects.get_or_create(name=group_name)
+        user.groups.add(group)
+        user.user_permissions.add(permission)
+        self.client.force_login(user)
+        return user
+
+    def test_warden_dashboard_shows_scoped_approval_workflow(self):
+        permission = Permission.objects.get(
+            content_type__app_label='swaps',
+            codename='review_exchangeproposal',
+        )
+        user = self._create_staff_user('warden_dashboard', 'Wardens', permission)
+
+        response = self.client.get(reverse('accounts:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Warden dashboard')
+        self.assertContains(response, 'Proposals needing your review')
+        self.assertContains(response, '>My dashboard</a>')
+        self.assertNotContains(response, 'Your allocation')
+        self.assertFalse(StudentProfile.objects.filter(user=user).exists())
+
+    def test_administrator_dashboard_shows_inventory_workflow(self):
+        permission = Permission.objects.get(
+            content_type__app_label='rooms',
+            codename='manage_room_inventory',
+        )
+        user = self._create_staff_user(
+            'admin_dashboard',
+            'Hostel Administrators',
+            permission,
+        )
+
+        response = self.client.get(reverse('accounts:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Hostel administrator dashboard')
+        self.assertContains(response, 'Keep room data ready')
+        self.assertContains(response, 'Warden assignments')
+        self.assertFalse(StudentProfile.objects.filter(user=user).exists())
+
+    def test_dean_dashboard_shows_read_only_analytics(self):
+        permission = Permission.objects.get(
+            content_type__app_label='swaps',
+            codename='view_exchangeanalytics',
+        )
+        user = self._create_staff_user(
+            'dean_dashboard',
+            'Student Welfare Deans',
+            permission,
+        )
+
+        response = self.client.get(reverse('accounts:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Student Welfare Dean dashboard')
+        self.assertContains(response, 'Institution-wide view')
+        self.assertContains(response, 'Open exchange reports')
+        self.assertFalse(StudentProfile.objects.filter(user=user).exists())
 
 
 class AccountsDashboardTests(TestCase):

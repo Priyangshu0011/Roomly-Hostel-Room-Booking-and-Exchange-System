@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dashboard_role }} dashboard | Roomly{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading">
+    <div>
+        <p class="eyebrow">{{ dashboard_role }}</p>
+        <h1>Good to see you, {{ user.first_name|default:user.username }}.</h1>
+        <p>Your Roomly responsibilities and the work that needs attention, all in one place.</p>
+    </div>
+</section>
+
+{% if dashboard_role == 'Hostel administrator' %}
+    <section class="stats-grid" aria-label="Hostel operations overview">
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">⌂</span><div><span class="stat-value">{{ active_blocks }}</span><span class="stat-label">Hostel blocks</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">▦</span><div><span class="stat-value">{{ verified_rooms }} / {{ total_rooms }}</span><span class="stat-label">Verified active rooms</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">✓</span><div><span class="stat-value">{{ unverified_rooms }}</span><span class="stat-label">Rooms awaiting verification</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">↔</span><div><span class="stat-value">{{ active_requests }}</span><span class="stat-label">Active exchange requests</span></div></div>
+    </section>
+    <section class="grid grid-2 subsection">
+        <article class="panel panel-pad">
+            <p class="eyebrow">Inventory and policy</p>
+            <h2>Keep room data ready</h2>
+            <p>{% if policy %}Cooling-off: {{ policy.cooling_off_days }} days · Request validity: {{ policy.request_validity_days }} days · Maximum chain: {{ policy.max_chain_length }}.{% else %}Set an exchange policy before students begin submitting requests.{% endif %}</p>
+            <div class="button-row">
+                <a class="button" href="{% url 'rooms:operations' %}">Open operations</a>
+                <a class="button button-quiet" href="{% url 'admin:rooms_room_changelist' %}">Manage rooms</a>
+            </div>
+        </article>
+        <article class="panel panel-pad">
+            <p class="eyebrow">People and workflow</p>
+            <h2>{{ approval_queue }} proposal{{ approval_queue|pluralize }} awaiting approval</h2>
+            <p>Maintain student eligibility and warden assignments so requests reach the right reviewers.</p>
+            <div class="button-row">
+                <a class="button button-quiet" href="{% url 'admin:swaps_policyrule_changelist' %}">Exchange policy</a>
+                <a class="button button-quiet" href="{% url 'admin:accounts_wardenassignment_changelist' %}">Warden assignments</a>
+            </div>
+        </article>
+    </section>
+    <section class="panel panel-pad subsection">
+        <div class="section-heading">
+            <div><p class="eyebrow">Recent activity</p><h2>Audit trail</h2></div>
+            <a class="room-link" href="{% url 'admin:swaps_auditentry_changelist' %}">View all activity &rarr;</a>
+        </div>
+        {% if recent_activity %}
+            <ul class="request-list">
+                {% for entry in recent_activity %}
+                    <li class="request-item">
+                        <p><strong>{{ entry.action }}</strong><br><span class="muted">{{ entry.actor|default:"System" }} · {{ entry.created_at|date:"M j, Y, g:i a" }}</span></p>
+                        <span class="muted">{{ entry.object_type }} #{{ entry.object_id }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-inline">Roomly activity will appear here as inventory and exchange workflows are used.</p>
+        {% endif %}
+    </section>
+{% elif dashboard_role == 'Warden' or dashboard_role == 'Chief warden' %}
+    <section class="stats-grid" aria-label="Approval overview">
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">◷</span><div><span class="stat-value">{{ pending_count }}</span><span class="stat-label">Proposals needing your review</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">⌂</span><div><span class="stat-value">{{ assigned_blocks.count }}</span><span class="stat-label">{% if dashboard_role == 'Chief warden' %}Hostel blocks in scope{% else %}Assigned hostel blocks{% endif %}</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">✓</span><div><span class="stat-value">{{ recent_approvals|length }}</span><span class="stat-label">Recent decisions shown</span></div></div>
+    </section>
+    <section class="grid grid-2 subsection">
+        <article class="panel panel-pad">
+            <div class="section-heading">
+                <div><p class="eyebrow">Approval queue</p><h2>Exchanges ready for review</h2></div>
+                <a class="room-link" href="{% url 'swaps:approval_queue' %}">Open queue &rarr;</a>
+            </div>
+            {% if pending_proposals %}
+                <ul class="request-list">
+                    {% for proposal in pending_proposals %}
+                        <li class="request-item">
+                            <p><strong>{{ proposal.cycle_length }}-resident exchange</strong><br><span class="muted">Expires {{ proposal.expires_at|date:"M j, Y, g:i a" }}</span></p>
+                            <a class="room-link" href="{% url 'swaps:approval_queue' %}">Review</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty-inline">No exchange proposals are waiting for your approval.</p>
+            {% endif %}
+        </article>
+        <article class="panel panel-pad">
+            <p class="eyebrow">Your scope</p>
+            <h2>{% if dashboard_role == 'Chief warden' %}All hostel blocks{% else %}Assigned blocks{% endif %}</h2>
+            {% if assigned_blocks %}
+                <ul class="request-list">
+                    {% for block in assigned_blocks %}
+                        <li class="request-item"><strong>{{ block.name }}</strong><span class="room-gender">{{ block.get_gender_restriction_display }}</span></li>
+                    {% endfor %}
+                </ul>
+            {% elif dashboard_role == 'Warden' %}
+                <p class="empty-inline">No hostel blocks are assigned to your account. Contact the hostel administrator.</p>
+            {% endif %}
+        </article>
+    </section>
+    <section class="panel panel-pad subsection">
+        <div class="section-heading"><div><p class="eyebrow">Decision history</p><h2>Your recent approvals</h2></div></div>
+        {% if recent_approvals %}
+            <ul class="request-list">
+                {% for approval in recent_approvals %}
+                    <li class="request-item"><p><strong>Proposal #{{ approval.proposal_id }} · {{ approval.get_decision_display }}</strong><br><span class="muted">{{ approval.decided_at|date:"M j, Y, g:i a" }}</span></p><span class="muted">{{ approval.remarks|truncatechars:90 }}</span></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-inline">Your recorded decisions will appear here.</p>
+        {% endif %}
+    </section>
+{% else %}
+    <section class="stats-grid" aria-label="Student welfare overview">
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">↔</span><div><span class="stat-value">{{ request_count }}</span><span class="stat-label">Exchange requests</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">▦</span><div><span class="stat-value">{{ match_rate }}%</span><span class="stat-label">Requests matched</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">✓</span><div><span class="stat-value">{{ completed_count }}</span><span class="stat-label">Completed exchanges</span></div></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true">◷</span><div><span class="stat-value">{{ pending_count }}</span><span class="stat-label">Awaiting approval</span></div></div>
+    </section>
+    <section class="grid grid-2 subsection">
+        <article class="panel panel-pad">
+            <p class="eyebrow">Institution-wide view</p>
+            <h2>Exchange outcomes at a glance</h2>
+            <p>{{ matched_request_count }} requests have appeared in a proposal across {{ block_count }} hostel block{{ block_count|pluralize }}.</p>
+            <a class="button" href="{% url 'swaps:analytics' %}">Open exchange reports</a>
+        </article>
+        <article class="panel panel-pad">
+            <p class="eyebrow">Read-only oversight</p>
+            <h2>Track fairness and participation</h2>
+            <p>Use the analytics reports to review request volume, match rates, completion patterns, and warden decisions.</p>
+            <a class="button button-quiet" href="{% url 'swaps:analytics' %}">View analytics</a>
+        </article>
+    </section>
+{% endif %}
+{% endblock %}
