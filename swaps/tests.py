@@ -9,6 +9,7 @@ from django.db import close_old_connections
 from django.core.management import call_command
 from django.test import Client, TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.urls import reverse
+from django.utils.formats import date_format
 from django.utils import timezone
 
 from accounts.models import StudentProfile, WardenAssignment
@@ -111,6 +112,35 @@ class ExchangeWorkflowTests(TestCase):
             profile.refresh_from_db()
             self.assertEqual(profile.current_room_id, room.pk)
         self.assertFalse(TransferRecord.objects.exists())
+
+    def test_inactive_request_error_identifies_student_and_individual_expiry(self):
+        self.accept_all()
+        inactive_request = self.requests[1]
+        inactive_request.status = ExchangeRequest.Status.EXPIRED
+        inactive_request.expires_at = timezone.now() - timedelta(hours=1)
+        inactive_request.save(update_fields=('status', 'expires_at'))
+        approver = User.objects.create_superuser(
+            'expired_request_supervisor',
+            'expired@example.edu',
+            'SafeTestPassword123!',
+        )
+
+        with self.assertRaises(ValidationError) as error:
+            approve_proposal(
+                self.proposal.pk,
+                approver,
+                'APPROVED',
+                'Check the request expiry.',
+            )
+
+        message = str(error.exception)
+        self.assertIn(f'Request #{inactive_request.pk}', message)
+        self.assertIn(self.students[1].user.username, message)
+        self.assertIn('has status "Expired" instead of "In a proposal"', message)
+        self.assertIn(
+            timezone.localtime(inactive_request.expires_at).strftime('%Y-%m-%d %H:%M %Z'),
+            message,
+        )
 
     def test_three_party_cycle_requires_all_acceptances_and_creates_transfer_record(self):
         self.assertEqual(self.proposal.cycle_length, 3)
@@ -352,6 +382,15 @@ class ExchangeWorkflowTests(TestCase):
         queue_response = client.get(reverse('swaps:approval_queue'))
         self.assertEqual(queue_response.status_code, 200)
         self.assertContains(queue_response, f'Proposal #{self.proposal.pk}')
+        for exchange_request in self.requests:
+            self.assertContains(queue_response, f'Request #{exchange_request.pk}')
+            self.assertContains(
+                queue_response,
+                date_format(
+                    timezone.localtime(exchange_request.expires_at),
+                    'M j, Y, g:i a',
+                ),
+            )
         approval_response = client.post(
             reverse('swaps:approve', kwargs={'proposal_id': self.proposal.pk}),
             {

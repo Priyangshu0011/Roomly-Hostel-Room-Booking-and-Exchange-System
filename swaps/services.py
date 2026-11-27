@@ -445,8 +445,28 @@ def approve_proposal(proposal_id, approver, decision, remarks):
                 exchange_request = requests_by_id[item.exchange_request_id]
                 if profile.current_room_id != item.from_room_id:
                     raise ValidationError('A participant’s room allocation changed after the proposal was created.')
-                if exchange_request.status != ExchangeRequest.Status.MATCHED:
-                    raise ValidationError('An exchange request in this proposal is no longer active.')
+                if (
+                    exchange_request.status != ExchangeRequest.Status.MATCHED
+                    or exchange_request.expires_at <= now
+                ):
+                    full_name = profile.user.get_full_name()
+                    student_name = (
+                        f'{full_name} (@{profile.user.username})'
+                        if full_name else profile.user.username
+                    )
+                    expiry = timezone.localtime(exchange_request.expires_at).strftime(
+                        '%Y-%m-%d %H:%M %Z',
+                    )
+                    reason = (
+                        f'has status "{exchange_request.get_status_display()}" instead of '
+                        '"In a proposal"'
+                        if exchange_request.status != ExchangeRequest.Status.MATCHED
+                        else 'has passed its expiry'
+                    )
+                    raise ValidationError(
+                        f'Request #{exchange_request.pk} for {student_name} cannot be approved '
+                        f'because it {reason}. Individual request expiry: {expiry}.'
+                    )
                 target_room = next(room for room in locked_rooms if room.pk == item.to_room_id)
                 reasons = eligibility_reasons(profile, target_room=target_room, now=now)
                 if reasons:

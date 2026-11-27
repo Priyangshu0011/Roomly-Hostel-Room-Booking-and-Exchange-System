@@ -197,7 +197,12 @@ def respond_to_proposal_view(request, proposal_id):
 def _approval_queryset():
     return ExchangeProposal.objects.filter(
         status=ExchangeProposal.Status.AWAITING_APPROVAL,
-    ).prefetch_related('participants__from_room__block', 'participants__to_room__block')
+    ).prefetch_related(
+        'participants__student__user',
+        'participants__exchange_request',
+        'participants__from_room__block',
+        'participants__to_room__block',
+    )
 
 
 @login_required(login_url='accounts:login')

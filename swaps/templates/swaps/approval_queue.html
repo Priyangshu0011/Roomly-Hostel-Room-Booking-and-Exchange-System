@@ -14,9 +14,19 @@
         </div>
         <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>Resident</th><th>From</th><th>To</th><th>Accepted</th></tr></thead>
+                <thead><tr><th>Resident</th><th>Student request</th><th>From</th><th>To</th><th>Accepted</th></tr></thead>
                 <tbody>{% for participant in proposal.participants.all %}
-                    <tr><td>{{ participant.student.user.get_full_name|default:participant.student.user.username }}</td><td>{{ participant.from_room.block.name }} · {{ participant.from_room.room_number }}</td><td>{{ participant.to_room.block.name }} · {{ participant.to_room.room_number }}</td><td>{{ participant.responded_at|date:"M j, g:i a" }}</td></tr>
+                    <tr>
+                        <td>{{ participant.student.user.get_full_name|default:participant.student.user.username }}<br><span class="muted">@{{ participant.student.user.username }}</span></td>
+                        <td>
+                            <strong>Request #{{ participant.exchange_request_id }}</strong><br>
+                            <span class="muted">Expires <time datetime="{{ participant.exchange_request.expires_at|date:'c' }}">{{ participant.exchange_request.expires_at|date:"M j, Y, g:i a" }}</time></span><br>
+                            <span class="muted">{{ participant.exchange_request.get_status_display }}</span>
+                        </td>
+                        <td>{{ participant.from_room.block.name }} · {{ participant.from_room.room_number }}</td>
+                        <td>{{ participant.to_room.block.name }} · {{ participant.to_room.room_number }}</td>
+                        <td>{{ participant.responded_at|date:"M j, g:i a" }}</td>
+                    </tr>
                 {% endfor %}</tbody>
             </table>
         </div>
